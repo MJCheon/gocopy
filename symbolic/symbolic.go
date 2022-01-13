@@ -46,7 +46,7 @@ func IsSameSymbolink(src string, dest string, isPreserve bool) int {
 		log.Fatal(err)
 	}
 
-	destSymFileInfo, err := os.Lstat(src)
+	destSymFileInfo, err := os.Lstat(dest)
 
 	if err != nil {
 		log.Fatal(err)
