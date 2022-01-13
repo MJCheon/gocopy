@@ -80,7 +80,7 @@ func main() {
 	app := &cli.App{
 		Name:      "gocopy",
 		Usage:     "Copy directory using go",
-		UsageText: "gocopy [Source Dir] [Destination Dir]",
+		UsageText: "gocopy [Source Dir/File] [Destination Dir/File]",
 		Authors: []*cli.Author{
 			&cli.Author{
 				Name:  "MJ Cheon",
