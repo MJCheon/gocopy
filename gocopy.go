@@ -5,29 +5,53 @@ import (
 	"log"
 	"os"
 	"runtime"
+	"sync"
 	"time"
 
 	cp "github.com/otiai10/copy"
 	cli "github.com/urfave/cli/v2"
 )
 
-func mainCopy(src string, dest string, c *cli.Context) {
-	startCopy(src, dest, c)
+func IsSameSymbolink(src string, dest string) bool {
+	srcSymFileInfo, err := os.Lstat(src)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	destSymFileInfo, err := os.Lstat(src)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if (srcSymFileInfo.Mode()&os.ModeSymlink != 0) && (destSymFileInfo.Mode()&os.ModeSymlink != 0) {
+		srcRealPath, _ := os.Readlink(src)
+		destRealPath, _ := os.Readlink(dest)
+
+		if srcRealPath == destRealPath {
+			return true
+		}
+	} else {
+		fmt.Println("Copy " + src + " to " + dest + " failed")
+	}
+
+	return false
 }
 
-func startCopy(src string, dest string, c *cli.Context) {
+func StartCopy(src string, dest string, wg *sync.WaitGroup, c *cli.Context) {
 	copyOpt := cp.Options{
 		OnSymlink: func(src string) cp.SymlinkAction {
 			// Shallow creates new symlink to the dest of symlink.
-			return 1
+			return cp.Shallow
 		},
 		OnDirExists: func(src, dest string) cp.DirExistsAction {
 			if c.Bool("force") {
 				// Replace deletes all contents under the dir and copy src files.
-				return 1
+				return cp.Replace
 			}
 			// Merge preserves or overwrites existing files under the dir (default behavior).
-			return 0
+			return cp.Merge
 		},
 		Sync:          false,
 		PreserveOwner: c.Bool("preserve"),
@@ -46,14 +70,23 @@ func startCopy(src string, dest string, c *cli.Context) {
 		log.Fatal(err)
 	}
 
+	fmt.Println("Copy " + src + " to " + dest)
+
 	for _, name := range nameList {
+		wg.Add(1)
 		srcPath := src + "/" + name
 		destPath := dest + "/" + name
 
-		fmt.Println("Copy " + srcPath + " to " + destPath)
-		err := cp.Copy(srcPath, destPath, copyOpt)
+		go func() {
+			defer wg.Done()
+			cp.Copy(srcPath, destPath, copyOpt)
+		}()
 
 		if err != nil {
+			// symbolic check
+			if IsSameSymbolink(srcPath, destPath) {
+				continue
+			}
 			log.Fatal(err)
 		}
 	}
@@ -83,6 +116,8 @@ func main() {
 			},
 		},
 		Action: func(c *cli.Context) error {
+			var wg sync.WaitGroup
+
 			if c.NArg() == 2 {
 
 				useCore := c.Int("core")
@@ -95,7 +130,8 @@ func main() {
 				copyDest := c.Args().Get(1)
 
 				fmt.Println("Start Time : " + time.Now().Format(time.RFC3339))
-				mainCopy(copySrc, copyDest, c)
+				StartCopy(copySrc, copyDest, &wg, c)
+				wg.Wait()
 				fmt.Println("End Time : " + time.Now().Format(time.RFC3339))
 			} else {
 				cli.ShowAppHelp(c)
