@@ -90,18 +90,23 @@ func main() {
 		Flags: []cli.Flag{
 			&cli.IntFlag{
 				Name: "core", Aliases: []string{"c"}, Value: 1,
+				Usage: "Number of CPU Core to use smaller than the OS cpu core.",
 			},
 			&cli.BoolFlag{
 				Name: "preserve", Aliases: []string{"p"}, Value: false,
+				Usage: "Preserve uid, gid, atime, mtime of all entry",
 			},
 			&cli.BoolFlag{
 				Name: "force", Aliases: []string{"f"}, Value: false,
+				Usage: "Replace when directory already existing in destination.",
 			},
 			&cli.BoolFlag{
 				Name: "sync", Aliases: []string{"s"}, Value: false,
+				Usage: "Sync after copy.",
 			},
 			&cli.BoolFlag{
 				Name: "verbose", Aliases: []string{"v"}, Value: false,
+				Usage: "More output.",
 			},
 		},
 		Action: func(c *cli.Context) error {
