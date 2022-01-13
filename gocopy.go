@@ -8,47 +8,16 @@ import (
 	"sync"
 	"time"
 
+	"gocopy/symbolic"
+
 	cp "github.com/otiai10/copy"
 	cli "github.com/urfave/cli/v2"
 )
 
-// Symbolic link type
-const (
-	SAMESYM = iota
-	DIFFSYM
-	NONESYM
-)
-
-func IsSameSymbolink(src string, dest string) int {
-	srcSymFileInfo, err := os.Lstat(src)
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	destSymFileInfo, err := os.Lstat(src)
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if srcSymFileInfo.Mode()&os.ModeSymlink != 0 {
-		if destSymFileInfo.Mode()&os.ModeSymlink != 0 {
-			srcRealPath, _ := os.Readlink(src)
-			destRealPath, _ := os.Readlink(dest)
-
-			if srcRealPath == destRealPath {
-				return SAMESYM
-			} else {
-				return DIFFSYM
-			}
-		}
-	}
-
-	return NONESYM
-}
-
 func StartCopy(src string, dest string, wg *sync.WaitGroup, c *cli.Context) {
+	isSync := c.Bool("sync")
+	isPreserve := c.Bool("preserve")
+
 	copyOpt := cp.Options{
 		OnSymlink: func(src string) cp.SymlinkAction {
 			// Shallow creates new symlink to the dest of symlink.
@@ -62,9 +31,9 @@ func StartCopy(src string, dest string, wg *sync.WaitGroup, c *cli.Context) {
 			// Merge preserves or overwrites existing files under the dir (default behavior).
 			return cp.Merge
 		},
-		Sync:          c.Bool("sync"),
-		PreserveOwner: c.Bool("preserve"),
-		PreserveTimes: c.Bool("preserve"),
+		Sync:          isSync,
+		PreserveOwner: isPreserve,
+		PreserveTimes: isPreserve,
 	}
 
 	dir, err := os.Open(src)
@@ -92,13 +61,13 @@ func StartCopy(src string, dest string, wg *sync.WaitGroup, c *cli.Context) {
 
 			if err != nil {
 				// symbolic check
-				isSymbolink := IsSameSymbolink(srcPath, destPath)
+				isSymbolink := symbolic.IsSameSymbolink(srcPath, destPath, isPreserve)
 
-				if isSymbolink == SAMESYM {
-					fmt.Println("Same Symbolic Link - " + srcPath + " to " + destPath)
-				} else if isSymbolink == DIFFSYM {
-					fmt.Println("Check Symbolic Link - " + srcPath + " and " + destPath)
-				} else if isSymbolink == NONESYM {
+				if isSymbolink == symbolic.SAMESYM {
+					fmt.Println("Same Symbolic Link : " + srcPath + " to " + destPath)
+				} else if isSymbolink == symbolic.DIFFSYM {
+					fmt.Println("Check Symbolic Link : " + srcPath + " and " + destPath)
+				} else if isSymbolink == symbolic.NONESYM {
 					log.Fatal(err)
 				}
 			}
