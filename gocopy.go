@@ -17,8 +17,17 @@ func mainCopy(src string, dest string, c *cli.Context) {
 
 func startCopy(src string, dest string, c *cli.Context) {
 	copyOpt := cp.Options{
-		OnDirExists: func(src, dest string) cp.DirExistsAction {
+		OnSymlink: func(src string) cp.SymlinkAction {
+			// Shallow creates new symlink to the dest of symlink.
 			return 1
+		},
+		OnDirExists: func(src, dest string) cp.DirExistsAction {
+			if c.Bool("force") {
+				// Replace deletes all contents under the dir and copy src files.
+				return 1
+			}
+			// Merge preserves or overwrites existing files under the dir (default behavior).
+			return 0
 		},
 		Sync:          false,
 		PreserveOwner: c.Bool("preserve"),
@@ -68,6 +77,9 @@ func main() {
 			},
 			&cli.BoolFlag{
 				Name: "preserve", Aliases: []string{"p"}, Value: false,
+			},
+			&cli.BoolFlag{
+				Name: "force", Aliases: []string{"f"}, Value: false,
 			},
 		},
 		Action: func(c *cli.Context) error {
