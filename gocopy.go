@@ -12,7 +12,14 @@ import (
 	cli "github.com/urfave/cli/v2"
 )
 
-func IsSameSymbolink(src string, dest string) bool {
+// Symbolic link type
+const (
+	SAMESYM = iota
+	DIFFSYM
+	NONESYM
+)
+
+func IsSameSymbolink(src string, dest string) int {
 	srcSymFileInfo, err := os.Lstat(src)
 
 	if err != nil {
@@ -25,18 +32,20 @@ func IsSameSymbolink(src string, dest string) bool {
 		log.Fatal(err)
 	}
 
-	if (srcSymFileInfo.Mode()&os.ModeSymlink != 0) && (destSymFileInfo.Mode()&os.ModeSymlink != 0) {
-		srcRealPath, _ := os.Readlink(src)
-		destRealPath, _ := os.Readlink(dest)
+	if srcSymFileInfo.Mode()&os.ModeSymlink != 0 {
+		if destSymFileInfo.Mode()&os.ModeSymlink != 0 {
+			srcRealPath, _ := os.Readlink(src)
+			destRealPath, _ := os.Readlink(dest)
 
-		if srcRealPath == destRealPath {
-			return true
+			if srcRealPath == destRealPath {
+				return SAMESYM
+			} else {
+				return DIFFSYM
+			}
 		}
-	} else {
-		fmt.Println("Copy " + src + " to " + dest + " failed")
 	}
 
-	return false
+	return NONESYM
 }
 
 func StartCopy(src string, dest string, wg *sync.WaitGroup, c *cli.Context) {
@@ -53,7 +62,7 @@ func StartCopy(src string, dest string, wg *sync.WaitGroup, c *cli.Context) {
 			// Merge preserves or overwrites existing files under the dir (default behavior).
 			return cp.Merge
 		},
-		Sync:          false,
+		Sync:          c.Bool("sync"),
 		PreserveOwner: c.Bool("preserve"),
 		PreserveTimes: c.Bool("preserve"),
 	}
@@ -79,16 +88,21 @@ func StartCopy(src string, dest string, wg *sync.WaitGroup, c *cli.Context) {
 
 		go func() {
 			defer wg.Done()
-			cp.Copy(srcPath, destPath, copyOpt)
-		}()
+			err := cp.Copy(srcPath, destPath, copyOpt)
 
-		if err != nil {
-			// symbolic check
-			if IsSameSymbolink(srcPath, destPath) {
-				continue
+			if err != nil {
+				// symbolic check
+				isSymbolink := IsSameSymbolink(srcPath, destPath)
+
+				if isSymbolink == SAMESYM {
+					fmt.Println("Same Symbolic Link - " + srcPath + " to " + destPath)
+				} else if isSymbolink == DIFFSYM {
+					fmt.Println("Check Symbolic Link - " + srcPath + " and " + destPath)
+				} else if isSymbolink == NONESYM {
+					log.Fatal(err)
+				}
 			}
-			log.Fatal(err)
-		}
+		}()
 	}
 
 }
@@ -113,6 +127,9 @@ func main() {
 			},
 			&cli.BoolFlag{
 				Name: "force", Aliases: []string{"f"}, Value: false,
+			},
+			&cli.BoolFlag{
+				Name: "sync", Aliases: []string{"s"}, Value: false,
 			},
 		},
 		Action: func(c *cli.Context) error {
