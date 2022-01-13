@@ -2,13 +2,13 @@ package main
 
 import (
 	"fmt"
+	"gocopy/symbolic"
 	"log"
 	"os"
 	"runtime"
+	"strconv"
 	"sync"
 	"time"
-
-	"gocopy/symbolic"
 
 	cp "github.com/otiai10/copy"
 	cli "github.com/urfave/cli/v2"
@@ -100,6 +100,9 @@ func main() {
 			&cli.BoolFlag{
 				Name: "sync", Aliases: []string{"s"}, Value: false,
 			},
+			&cli.BoolFlag{
+				Name: "verbose", Aliases: []string{"v"}, Value: false,
+			},
 		},
 		Action: func(c *cli.Context) error {
 			var wg sync.WaitGroup
@@ -107,18 +110,31 @@ func main() {
 			if c.NArg() == 2 {
 
 				useCore := c.Int("core")
+				isVerbose := c.Bool("verbose")
 
 				if useCore <= runtime.NumCPU() {
 					runtime.GOMAXPROCS(useCore)
+
+					if isVerbose {
+						fmt.Println("CPU Core (Used/Total): " + strconv.Itoa(useCore) + " / " + strconv.Itoa(runtime.NumCPU()))
+						fmt.Println("")
+					}
 				}
 
 				copySrc := c.Args().Get(0)
 				copyDest := c.Args().Get(1)
 
-				fmt.Println("Start Time : " + time.Now().Format(time.RFC3339))
+				if isVerbose {
+					fmt.Println("Start Time \t: " + time.Now().Format("2006-01-02 15:04:05.999") + "\n")
+				}
+
 				StartCopy(copySrc, copyDest, &wg, c)
 				wg.Wait()
-				fmt.Println("End Time : " + time.Now().Format(time.RFC3339))
+
+				if isVerbose {
+					fmt.Println("\nEnd Time \t: " + time.Now().Format("2006-01-02 15:04:05.999"+"\n"))
+				}
+
 			} else {
 				cli.ShowAppHelp(c)
 			}
