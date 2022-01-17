@@ -79,6 +79,7 @@ func StartCopy(src string, dest string, wg *sync.WaitGroup, c *cli.Context) {
 func main() {
 	app := &cli.App{
 		Name:      "gocopy",
+		Version:   "1.0.0",
 		Usage:     "Copy directory using go",
 		UsageText: "gocopy [Source Dir/File] [Destination Dir/File]",
 		Authors: []*cli.Author{
