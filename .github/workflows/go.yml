@@ -1,0 +1,34 @@
+name: Build/Release
+
+on: 
+  push:
+    tags:
+      - v*
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Get Tag
+      id: tag
+      run: echo ::set-output name=SOURCE_TAG::${GITHUB_REF#refs/tags/}
+    
+    - name: Show tag
+      run: |
+        echo $SOURCE_NAME
+        echo $SOURCE_BRANCH
+        echo $SOURCE_TAG
+      env:
+        SOURCE_NAME: ${{ steps.tag.outputs.SOURCE_NAME }}
+        SOURCE_BRANCH: ${{ steps.tag.outputs.SOURCE_BRANCH }}
+        SOURCE_TAG: ${{ steps.tag.outputs.SOURCE_TAG }}  
+        
+    - uses: actions/checkout@v2
+
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: ^1.17
+
+    - name: Build
+      run: go build -v -o gocopy
