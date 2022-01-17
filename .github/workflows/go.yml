@@ -15,15 +15,9 @@ jobs:
         goarch: [amd64]
         
     steps:
-    - name: Get Tag
-      id: tag
-      run: echo ::set-output name=SOURCE_TAG::${GITHUB_REF#refs/tags/}
-    
     - name: Checkout tag
       uses: actions/checkout@v2
-      with:
-        ref: ${{ steps.tag.outputs.SOURCE_TAG }}
-
+      
     - name: Build gocopy
       uses: wangyoucao577/go-release-action@v1.22
       with:
