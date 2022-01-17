@@ -13,17 +13,10 @@ jobs:
       id: tag
       run: echo ::set-output name=SOURCE_TAG::${GITHUB_REF#refs/tags/}
     
-    - name: Show tag
-      run: |
-        echo $SOURCE_NAME
-        echo $SOURCE_BRANCH
-        echo $SOURCE_TAG
-      env:
-        SOURCE_NAME: ${{ steps.tag.outputs.SOURCE_NAME }}
-        SOURCE_BRANCH: ${{ steps.tag.outputs.SOURCE_BRANCH }}
-        SOURCE_TAG: ${{ steps.tag.outputs.SOURCE_TAG }}  
-        
-    - uses: actions/checkout@v2
+    - name: Checkout tag
+      uses: actions/checkout@v2
+      with:
+        ref: ${{ steps.tag.outputs.SOURCE_TAG }}
 
     - name: Set up Go
       uses: actions/setup-go@v2
