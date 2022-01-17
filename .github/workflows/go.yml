@@ -31,7 +31,5 @@ jobs:
         goos: ${{ matrix.goos }}
         goarch: ${{ matrix.goarch }}
         goversion: "1.17"
-        binary_name: "gocopy"
-        release_tag: ${{ github.event.inputs.tags }}
         overwrite: true
         retry: 10
