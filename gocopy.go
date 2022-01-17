@@ -106,7 +106,7 @@ func main() {
 				Usage: "Sync after copy.",
 			},
 			&cli.BoolFlag{
-				Name: "verbose", Aliases: []string{"v"}, Value: false,
+				Name: "debug", Aliases: []string{"d"}, Value: false,
 				Usage: "More output.",
 			},
 		},
@@ -116,12 +116,12 @@ func main() {
 			if c.NArg() == 2 {
 
 				useCore := c.Int("core")
-				isVerbose := c.Bool("verbose")
+				isDebug := c.Bool("debug")
 
 				if useCore <= runtime.NumCPU() {
 					runtime.GOMAXPROCS(useCore)
 
-					if isVerbose {
+					if isDebug {
 						fmt.Println("CPU Core (Used/Total): " + strconv.Itoa(useCore) + " / " + strconv.Itoa(runtime.NumCPU()))
 						fmt.Println("")
 					}
@@ -130,14 +130,14 @@ func main() {
 				copySrc := c.Args().Get(0)
 				copyDest := c.Args().Get(1)
 
-				if isVerbose {
+				if isDebug {
 					fmt.Println("Start Time \t: " + time.Now().Format("2006-01-02 15:04:05.999") + "\n")
 				}
 
 				StartCopy(copySrc, copyDest, &wg, c)
 				wg.Wait()
 
-				if isVerbose {
+				if isDebug {
 					fmt.Println("\nEnd Time \t: " + time.Now().Format("2006-01-02 15:04:05.999"+"\n"))
 				}
 
